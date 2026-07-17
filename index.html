@@ -287,8 +287,6 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
       <a class="nav-item" data-view="monitor"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M3 12h4l3-8 4 16 3-8h4"/></svg>效果监控<span class="step-n">6</span></a>
       <div class="nav-label">核心 · 逻辑链诊断</div>
       <a class="nav-item" data-view="chain"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M9 17H7A5 5 0 0 1 7 7h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></svg>GEO 逻辑链<span class="step-n" style="font-size:0"></span></a>
-      <div class="nav-label">进阶 · 白盒 GEO</div>
-      <a class="nav-item" data-view="rag"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2M4 7v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7M4 7h16M9 12h6"/></svg>知识库演示<span class="step-n" style="font-size:0"></span></a>
     </nav>
     <div class="sidebar-foot">
       <div class="mode-pill"><span class="dot" id="modeDot"></span><span id="modeText">演示模式 · 模拟数据</span></div>
@@ -425,63 +423,11 @@ input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:22px;heigh
         </div>
       </section>
 
-      <!-- ===== VIEW 7: RAG 白盒演示 ===== -->
-      <section class="view" id="view-rag">
-        <div class="card card-pad" style="margin-bottom:20px;background:linear-gradient(120deg,#f0f5ff,#f6f0ff);border-color:#dde6ff">
-          <div style="display:flex;gap:14px;align-items:flex-start">
-            <div style="width:40px;height:40px;border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:var(--shadow)"><svg viewBox="0 0 24 24" fill="none" stroke="#7c5cff" stroke-width="1.8" width="20"><path d="M4 7V5a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v2M4 7v12a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7M4 7h16"/></svg></div>
-            <div>
-              <h3 style="font-size:15.5px;font-weight:700;margin-bottom:6px">白盒 GEO · 私有知识库命中率演示</h3>
-              <p style="font-size:13px;color:var(--ink-2);line-height:1.65">客户用的往往不是裸大模型，而是<b>接了 RAG / 私有知识库的自研 Agent</b>（如飞书深诺给客户做的选品推荐 Agent）。这种场景是<b>最可控的白盒 GEO</b>——你不用赌大模型收不收录，直接把优化过的品牌内容灌进知识库，Agent 检索时命中率可控。下面用真实 DeepSeek 对比"没有知识库 vs 有知识库"的回答差异。</p>
-            </div>
-          </div>
-        </div>
-
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:20px" id="ragGrid">
-          <!-- 左：知识库编辑 -->
-          <div class="card">
-            <div class="card-head"><div><h3>① 品牌知识库</h3><p>把品牌卖点/事实灌进 Agent 的私有知识库</p></div><button class="btn btn-soft btn-sm" onclick="seedKB()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>填充示例</button></div>
-            <div class="card-pad">
-              <div class="field" style="margin-bottom:12px">
-                <label style="font-size:12.5px">新增知识条目 <span class="hint">一条一个卖点/事实</span></label>
-                <div style="display:flex;gap:8px">
-                  <input id="kbInput" placeholder="如：飞书深诺是 Meta 官方顶级合作伙伴" style="flex:1;padding:9px 12px;border:1px solid var(--line);border-radius:9px;outline:none">
-                  <button class="btn btn-primary btn-sm" onclick="addKB()">加入</button>
-                </div>
-              </div>
-              <div id="kbList" style="max-height:300px;overflow:auto"></div>
-            </div>
-          </div>
-
-          <!-- 右：命中率对比测试 -->
-          <div class="card">
-            <div class="card-head"><div><h3>② Agent 命中率对比</h3><p>同一问题，测灌库前后 Agent 回答变化</p></div></div>
-            <div class="card-pad">
-              <div class="field" style="margin-bottom:14px">
-                <label style="font-size:12.5px">测试提问</label>
-                <input id="ragQ" placeholder="如：有哪些靠谱的出海营销服务商？" style="width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:9px;outline:none">
-              </div>
-              <button class="btn btn-primary" style="width:100%;justify-content:center" onclick="runRAG()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M13 2 3 14h7l-1 8 10-12h-7z"/></svg>运行对比测试（真实调用）</button>
-              <div id="ragResult" style="margin-top:16px"></div>
-            </div>
-          </div>
-        </div>
-
-        <div class="card card-pad" style="margin-top:20px">
-          <h3 style="font-size:14.5px;font-weight:600;margin-bottom:12px">💡 给客户的白盒 GEO 决策要点</h3>
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:14px">
-            <div style="background:var(--surface-2);border-radius:10px;padding:14px"><div style="font-size:13px;font-weight:600;color:var(--brand-ink);margin-bottom:5px">先问：产品联不联网？</div><div style="font-size:12.5px;color:var(--ink-2);line-height:1.55">联网→做检索源 SEO；不联网→做长期语料沉淀。</div></div>
-            <div style="background:var(--surface-2);border-radius:10px;padding:14px"><div style="font-size:13px;font-weight:600;color:var(--purple);margin-bottom:5px">有没有自研 RAG？</div><div style="font-size:12.5px;color:var(--ink-2);line-height:1.55">有→直接灌知识库，命中率 100% 可控，最快见效。</div></div>
-            <div style="background:var(--surface-2);border-radius:10px;padding:14px"><div style="font-size:13px;font-weight:600;color:var(--teal);margin-bottom:5px">数据从哪来？</div><div style="font-size:12.5px;color:var(--ink-2);line-height:1.55">固定 API/MCP→优化数据源接口里的品牌字段与结构化描述。</div></div>
-          </div>
-        </div>
-      </section>
-
       <!-- ===== VIEW 8: GEO 逻辑链诊断 ===== -->
       <section class="view" id="view-chain">
         <div class="card card-pad" style="margin-bottom:20px;background:linear-gradient(120deg,#eef4ff,#fff);border-color:#dde6ff">
           <h3 style="font-size:15.5px;font-weight:700;margin-bottom:6px">GEO 的隐含逻辑链 · 内容要闯过 5 关才会被 AI 引用</h3>
-          <p style="font-size:13px;color:var(--ink-2);line-height:1.65">大多数人只看最后的"引用率分数"，却不知道<b>断在哪一环</b>。这条链把 GEO 全流程显性化：每一环标注你的<b>实测状态</b>、<b>是否可控</b>、以及<b>断点在哪</b>。看懂它，才知道该动内容、铺源，还是转白盒——而不是对着黑盒瞎赌。</p>
+          <p style="font-size:13px;color:var(--ink-2);line-height:1.65">大多数人只看最后的"引用率分数"，却不知道<b>断在哪一环</b>。这条链把 GEO 全流程显性化：每一环标注你的<b>实测状态</b>、<b>是否可控</b>、以及<b>断点在哪</b>。看懂它，才知道该动内容还是铺源——而不是对着黑盒瞎赌。</p>
         </div>
 
         <div id="chainFlow"></div>

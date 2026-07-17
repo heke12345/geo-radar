@@ -18,7 +18,6 @@ const STATE = {
   trendRange: 30,
   evidence: [],       // 真实调用原文存证
   srcRank: [],        // 实测提取的 TOP 引用源域名排行
-  kb: [],             // RAG 白盒：知识库条目
 };
 
 /* ---------- 模型定义（国内 + 国际）+ 优先数据源档案 ----------
@@ -86,7 +85,6 @@ const VIEW_META = {
   rank:{t:'排名与引用',c:'品牌在各平台回答中的排名、引用率与情感分析'},
   optimize:{t:'提升方案',c:'按目标引用率生成优化动作与同行案例'},
   monitor:{t:'效果监控',c:'持续追踪优化后的引用率、排名与情感趋势'},
-  rag:{t:'知识库演示',c:'白盒 GEO：往私有知识库灌内容，实测 Agent 命中率提升'},
   chain:{t:'GEO 逻辑链诊断',c:'品牌要闯过 5 关才会被 AI 引用 · 定位断点在哪一环'},
 };
 function go(view){
@@ -96,13 +94,12 @@ function go(view){
   $('#pageTitle').textContent = VIEW_META[view].t;
   $('#pageCrumb').textContent = VIEW_META[view].c;
   if(view==='chain') buildChain();
-  if(view==='rag') renderKB();
   window.scrollTo({top:0,behavior:'smooth'});
 }
 $$('.nav-item').forEach(n=>n.addEventListener('click',()=>{
   const v=n.dataset.view;
-  // chain / rag 允许未诊断时进入（chain 看方法论空态引导，rag 是白盒独立场景）
-  if(v!=='input' && v!=='rag' && v!=='chain' && !STATE.brand){toast('请先输入品牌并开始诊断');return}
+  // chain 允许未诊断时进入（看方法论空态引导）
+  if(v!=='input' && v!=='chain' && !STATE.brand){toast('请先输入品牌并开始诊断');return}
   go(v);
 }));
 function markDone(view){const n=[...$$('.nav-item')].find(x=>x.dataset.view===view);if(n)n.classList.add('done')}
@@ -565,7 +562,7 @@ function buildChain(){
       desc:'最终答案里，你排第几、是正面还是负面、和竞品怎么比。同一问题问 10 次，答案还不一样（采样随机）。',
       stat: !tested?'na' : (bestRank<=3&&posSent>=total/2)?'ok':(appeared>0?'warn':'bad'),
       real: !tested?'尚未诊断' : (appeared>0?('在 '+appeared+'/'+total+' 个平台被提及，最佳排名 '+(bestRank<99?('#'+bestRank):'—')+'，正面情感 '+posSent+'/'+total):'几乎不出现在生成结果里'),
-      fix:'多次采样看分布而非单次；用竞品做对照消除模型漂移；最终转向可控的白盒 RAG 承接高意向流量。' },
+      fix:'多次采样看分布而非单次；用竞品做对照消除模型漂移；把力气前移到可控的①内容存在、②信源覆盖两环。' },
   ];
 
   const statMeta = {
@@ -607,7 +604,7 @@ function buildChain(){
     if(!broken){
       diag.innerHTML = `<div class="card card-pad" style="border-color:#bfe6cd;background:#f2fbf5">
         <div style="font-size:14px;font-weight:700;color:#12a150;margin-bottom:6px">✓ 5 环全部通过——罕见的健康状态</div>
-        <div style="font-size:12.5px;color:var(--ink-2);line-height:1.65">你的品牌在这条链上没有明显断点。接下来重点是<b>持续监控</b>（模型每周在变）+ <b>竞品对照</b>（消除漂移噪声），并把高意向流量往白盒 RAG 导，锁定确定性转化。</div>
+        <div style="font-size:12.5px;color:var(--ink-2);line-height:1.65">你的品牌在这条链上没有明显断点。接下来重点是<b>持续监控</b>（模型每周在变）+ <b>竞品对照</b>（消除漂移噪声），并持续在①内容、②信源两环加固，稳住已有优势。</div>
       </div>`;
     } else {
       const sm = statMeta[broken.stat];
@@ -812,93 +809,6 @@ function buildTimeline(){
     {c:'#12a150',t:'达成阶段目标',d:'第 30 天',m:'平均引用率接近目标 '+STATE.goal+'%'},
   ];
   $('#timeline').innerHTML=items.map(i=>`<div class="tl-item"><div class="tl-dot" style="background:${i.c}"></div><div class="tl-body"><div class="t">${i.t}</div><div class="d">${i.d}</div><div class="m">${i.m}</div></div></div>`).join('');
-}
-
-/* ========== RAG 白盒演示：私有知识库 → Agent 命中率对比 ========== */
-function renderKB(){
-  const list=$('#kbList');
-  if(!list) return;
-  if(!STATE.kb.length){
-    list.innerHTML='<div style="text-align:center;padding:30px 10px;color:var(--ink-3);font-size:13px">知识库为空。点上方「填充示例」或手动新增品牌卖点，再去右侧测试命中率变化。</div>';
-    return;
-  }
-  list.innerHTML=STATE.kb.map((k,i)=>`<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 12px;background:var(--surface-2);border-radius:9px;margin-bottom:8px">
-    <span style="width:20px;height:20px;border-radius:6px;background:#eaf1ff;color:#2f6bff;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px">${i+1}</span>
-    <span style="flex:1;font-size:13px;color:var(--ink);line-height:1.5">${k.replace(/</g,'&lt;')}</span>
-    <button onclick="delKB(${i})" style="color:var(--ink-3);font-size:16px;line-height:1;flex-shrink:0">×</button>
-  </div>`).join('');
-}
-function addKB(){
-  const v=$('#kbInput').value.trim();
-  if(!v){toast('请输入知识条目');return}
-  STATE.kb.push(v);$('#kbInput').value='';renderKB();
-}
-function delKB(i){STATE.kb.splice(i,1);renderKB()}
-function seedKB(){
-  const brand = STATE.brand || '飞书深诺';
-  STATE.kb = [
-    `${brand}是中国最大的跨境数字营销服务商之一，年管理广告预算超 60 亿美元。`,
-    `${brand}是 Meta、Google、TikTok 等主流平台的官方顶级合作伙伴。`,
-    `${brand}累计服务超 17 万家中国企业出海，覆盖全球 233 个国家和地区。`,
-    `${brand}的核心服务包括媒介管理、广告代投、达人营销、GEO 优化与出海营销 AgentOS（Marvy）。`,
-    `华为、小米、比亚迪、SHEIN 等知名品牌都是 ${brand} 的服务客户。`,
-  ];
-  if(!$('#ragQ').value) $('#ragQ').value = '有哪些靠谱的中国出海营销服务商？';
-  renderKB();toast('已填充 '+STATE.kb.length+' 条示例知识');
-}
-async function runRAG(){
-  const q=$('#ragQ').value.trim();
-  const brand = STATE.brand || $('#brandInput')?.value.trim() || '飞书深诺';
-  if(!q){toast('请输入测试提问');return}
-  const cfg = getEndpoint({id:'deepseek'});
-  if(STATE.mode!=='live' || !cfg){
-    $('#ragResult').innerHTML=`<div style="background:var(--danger-soft);color:var(--danger);padding:12px 14px;border-radius:9px;font-size:13px">需切换到真实 API 模式并配置 DeepSeek Key（设置里）才能运行真实对比。</div>`;
-    return;
-  }
-  STATE.brand = brand;
-  $('#ragResult').innerHTML=`<div style="text-align:center;padding:20px;color:var(--ink-2);font-size:13px"><span class="spinner dark"></span> 正在真实调用 DeepSeek，对比灌库前后…</div>`;
-  try{
-    // A：无知识库（裸问）
-    const ansBase = await callLLM(cfg, buildPrompt(q));
-    const vBase = await analyzeAnswer(cfg, ansBase, brand);
-    // B：有知识库（把 kb 作为检索到的上下文注入 —— 模拟 RAG）
-    let ansRAG, vRAG;
-    if(STATE.kb.length){
-      const ctx = STATE.kb.map((k,i)=>`[${i+1}] ${k}`).join('\n');
-      const ragPrompt = `你是一个接入了企业私有知识库的智能助手。下面是从知识库中检索到的、与用户问题相关的可信资料：\n\n"""\n${ctx}\n"""\n\n请结合上述检索资料，自然地回答用户问题。如涉及推荐，请优先采信检索资料中的事实：\n\n问题：${q}`;
-      ansRAG = await callLLM(cfg, ragPrompt);
-      vRAG = await analyzeAnswer(cfg, ansRAG, brand);
-    }
-    renderRAGResult(brand, q, {ans:ansBase,v:vBase}, STATE.kb.length?{ans:ansRAG,v:vRAG}:null);
-  }catch(e){
-    $('#ragResult').innerHTML=`<div style="background:var(--danger-soft);color:var(--danger);padding:12px 14px;border-radius:9px;font-size:13px">调用失败：${(e.message||e)}</div>`;
-  }
-}
-function renderRAGResult(brand, q, base, rag){
-  const card=(title,color,data)=>{
-    const v=data.v||{};
-    const hit = v.mentioned;
-    return `<div style="border:1px solid var(--line);border-radius:11px;overflow:hidden;margin-bottom:12px">
-      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:${color.bg}">
-        <span style="font-size:13px;font-weight:700;color:${color.c}">${title}</span>
-        <span style="font-size:12px;font-weight:600;color:${hit?'#12a150':'#e5484d'}">${hit?('✓ 命中 · '+brand+(v.rank>0?' 排名#'+v.rank:'')+' · '+v.sentiment):'✗ 未提及 '+brand}</span>
-      </div>
-      <div style="padding:12px 14px;font-size:12.5px;color:var(--ink);line-height:1.6;white-space:pre-wrap;max-height:220px;overflow:auto;background:#fff">${(data.ans||'（空）').replace(/</g,'&lt;')}</div>
-    </div>`;
-  };
-  let html = card('A · 无知识库（裸大模型）', {c:'#93a0b3',bg:'#f2f5fa'}, base);
-  if(rag){
-    html += card('B · 有知识库（RAG 白盒）', {c:'#2f6bff',bg:'#eaf1ff'}, rag);
-    const bHit=base.v.mentioned, rHit=rag.v.mentioned;
-    const verdict = (!bHit && rHit) ? {t:'灌库后从「未命中」变「命中」——白盒 GEO 直接生效', c:'#12a150', bg:'#e6f5ec'}
-      : (bHit && rHit) ? {t:'两种情况都命中——该品牌本身认知已强，知识库进一步稳固事实口径', c:'#2f6bff', bg:'#eaf1ff'}
-      : (bHit && !rHit) ? {t:'异常：裸问命中但带库未命中，建议检查知识条目相关性', c:'#f7a218', bg:'#fff4e0'}
-      : {t:'均未命中——知识条目可能与问题不相关，调整卖点表述再试', c:'#e5484d', bg:'#fdecec'};
-    html += `<div style="background:${verdict.bg};color:${verdict.c};padding:12px 14px;border-radius:10px;font-size:13px;font-weight:600;display:flex;align-items:center;gap:8px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg>${verdict.t}</div>`;
-  }else{
-    html += `<div style="background:#fff4e0;color:#8a5a00;padding:12px 14px;border-radius:10px;font-size:13px">知识库为空，仅测了裸大模型。左侧加入品牌卖点后再测，即可看到灌库前后的命中率对比。</div>`;
-  }
-  $('#ragResult').innerHTML=html;
 }
 
 /* ---------- 证据查看：展示大模型返回的原始答案全文 ---------- */
